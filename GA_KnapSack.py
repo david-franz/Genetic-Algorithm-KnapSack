@@ -14,13 +14,14 @@ need to program:
 - run for 5 generations
 '''
 
-
 # we use only the first command line argument
+filename = sys.argv[1]
+
 # the file is loaded and returned as a dictionary data structure
-FileLoader.load_file(sys.argv[1])
+FileLoader.load_file(filename)
 
 # placeholder values
-# should 
+# should change dependent on sys.argv[1]
 capacity = 20
 bag_size = 12
 
@@ -38,8 +39,6 @@ def generate_binary_string_of_length_n(n):
 		binary_string += str(random.randint(0,1))
 
 	return binary_string
-
-print(generate_binary_string_of_length_n(5))
 
 def generate_initial_population():
 	weight_of_chosen_population = float('inf')
