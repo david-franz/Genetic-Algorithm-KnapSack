@@ -76,7 +76,20 @@ def generate_initial_instance(max_time_per_instance):
 
 	return initial_instance
 
+# the fitness function is the sum of the values of the items
+def fitness_function(instance):
+	value = 0
+
+	# note that activation_function range is {0,1} because instance in a binary string
+	# data[index][0] refers to the value of the item at index in the data list
+	for index, item in enumerate(instance):
+		activation_function = int(item)
+		value += (activation_function * int(data[index][0]))
+
+	return value
+
 if __name__ == '__main__':
 	initial_instances = [generate_initial_instance(0.1) for i in range(amount_of_instances)]
 	print(initial_instances)
 	print([calculate_weight_of_instance(instance) for instance in initial_instances])
+	print([fitness_function(instance) for instance in initial_instances])
