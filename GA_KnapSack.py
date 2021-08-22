@@ -92,7 +92,7 @@ def generate_initial_instance(max_time_per_instance):
 	return initial_instance
 
 # the fitness function is the sum of the values of the items
-# probably will change to sum per unit weight
+# probably will change to value per unit weight
 def fitness_function(instance):
 	value = 0
 
