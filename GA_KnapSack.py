@@ -5,11 +5,13 @@ import time
 from dataloader import DataLoader
 
 '''TODO:
+# implement dataloader
+
 # random generation of initial generation
 
 - way of selecting individuals for next generation:
 	– Construct an empty new population
-	– Do elitism (copy top individuals) <- experiment with amount of individuals
+	– Do elitism (copy top individuals) <- experiment with fraction of individuals
 	– Repeat until the new population is full:
 		• Select two parents from the population by roulette wheel selection
 			(the probability of selecting each individual is proportional with its fitness)
@@ -18,8 +20,9 @@ from dataloader import DataLoader
 		• Put the two (mutated) children into the new population
 
 - run for 5 generations and present results with matplotlib'
-	- find good stopping criteria
+	- find good stopping criteria (or just after a certain number of generations)
 	- download matplotlib
+	- draw convergence curves
 
 - abstract out code into libray for use in part 2'''
 
@@ -34,7 +37,8 @@ capacity = int(file_metadata[1])
 # placeholder value
 # make this some function of the bagsize
 # more local optima requires larger population_size
-population_size = 10
+# more resource can afford larger population
+population_size = 30
 
 # the file is loaded and returned as a list of lists of size 2
 # the first item in the list is the value (index 0)
@@ -93,6 +97,8 @@ def generate_initial_instance(max_time_per_instance):
 
 # the fitness function is the sum of the values of the items
 # probably will change to value per unit weight
+# change to fitness function in notes
+# 𝛼: very large value means you always ignore infeasible solutions
 def fitness_function(instance):
 	value = 0
 
