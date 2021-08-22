@@ -11,9 +11,9 @@ from dataloader import DataLoader
 
 - way of selecting individuals for next generation:
 	– Construct an empty new population
-	– Do elitism (copy top individuals) <- experiment with fraction of individuals
+	– Do elitism (copy 5% of top individuals)
 	– Repeat until the new population is full:
-		• Select two parents from the population by roulette wheel selection
+		• Select two parents from the population by roulette wheel selection/k  tornament selection
 			(the probability of selecting each individual is proportional with its fitness)
 		• Apply one-point crossover to the two parents to generate two children
 		• Each child has a probability (mutation rate) to undergo flip mutation
@@ -25,6 +25,10 @@ from dataloader import DataLoader
 	- draw convergence curves
 
 - abstract out code into libray for use in part 2'''
+
+if len(sys.argv) != 2:
+	print("Please enter the data filename as a command line argument.")
+	sys.exit(1)
 
 # we use only the first command line argument
 filename = sys.argv[1]
@@ -110,10 +114,98 @@ def fitness_function(instance):
 
 	return value
 
+def get_percentage_best_instances(instances, percentage):
+	instances = instances.sort() # need to custom sort
+
+	best_percentage_instances = list()
+	for i in range(int(percentage * len(instances))):
+		best_percentage_instances.append(instances[i])
+
+	return best_percentage_instances
+
+def get_number_best_instances(instances, number):
+	instances.sort() # need to custom sort
+
+	best_percentage_instances = list()
+	for i in range(number):
+		best_percentage_instances.append(instances[i])
+
+	return best_percentage_instances	
+
+def crossover(instance1, instance2):
+	assert len(instance1) == len(instance2)
+
+	crossover_point = random.randint(0, len(instance1))
+
+	new_instance1 = instance1[crossover_point:] + instance2[:crossover_point]
+	new_instance2 = instance1[:crossover_point] + instance2[crossover_point:]
+
+	return new_instance1, new_instance2
+
+def mutation_with_probability(instance, probability_of_mutation):
+	new_instance = ""
+
+	if random.random() < probability_of_mutation:
+		index_of_mutation = random.randint(0, len(instance))
+
+		for index, item in enumerate(instance):
+			if index == index_of_mutation:
+				item = (int(instance[index_of_mutation]) + 1) % 2
+			new_instance += str(item)
+	else:
+		return instance
+
+	return new_instance
+
+def generate_next_generation(instances):
+	new_instances = list()
+
+	new_instances.append(get_number_best_instances(instances, 5)) # change this to percentage when it works
+
+	while len(new_instances) < bagsize:
+		instance1, instance2 = tuple(get_number_best_instances(instances, 2)) # new function needed here
+		new_instance1, new_instance2 = crossover(instance1, instance2)
+		
+		# experiment with the mutation probability
+		new_instance1 = mutation_with_probability(new_instance1, 0.1)
+		new_instance2 = mutation_with_probability(new_instance2, 0.1)
+		
+		new_instances.append(new_instance1)
+		if len(new_instances) == bagsize: break
+		
+		new_instances.append(new_instance2)
+
+	return new_instances
+
+def find_best_instance(instances):
+	best_instance, best_instance_fitness = instances[0], fitness_function(instances[0])
+
+	for index, instance in enumerate(instances):
+		if fitness_function(instance) > best_instance_fitness:
+			best_instance, best_instance_fitness = instances[index], fitness_function(instances[index])
+
+	return best_instance, best_instance_fitness
+
 if __name__ == '__main__':
-	max_allowed_runtime_for_initial_generation = 10 * (bagsize / capacity)
+
+	# calculating the max allowed time to generate each instance in the intial generation
+	# if this threshold is passed, a simpler generation technique is used
+	max_allowed_runtime_for_initial_generation = 10 * (bagsize / capacity) # grows proportional to bagsize per unit capacity
 	threshold_time = max_allowed_runtime_for_initial_generation / population_size
-	initial_instances = [generate_initial_instance(threshold_time) for i in range(population_size)]
-	print(initial_instances)
-	print([calculate_weight_of_instance(instance) for instance in initial_instances])
-	print([fitness_function(instance) for instance in initial_instances])
+
+	# generating intial instances
+	current_generation = [generate_initial_instance(threshold_time) for i in range(population_size)]
+	print(current_generation)
+	#print([calculate_weight_of_instance(instance) for instance in current_generation])
+	#print([fitness_function(instance) for instance in current_generation])
+
+	best_instance, best_instance_fitness = find_best_instance(current_generation)
+	print("best instance = {}".format(best_instance))
+	print("best instance fitness = {}".format(best_instance_fitness))
+
+	current_generation = generate_next_generation(current_generation)
+	print("current generation = {}".format(current_generation))
+
+	best_instance, best_instance_fitness = find_best_instance(current_generation)
+	print("best instance = {}".format(best_instance))
+	print("best instance fitness = {}".format(best_instance_fitness))
