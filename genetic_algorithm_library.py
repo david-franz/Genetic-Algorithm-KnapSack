@@ -2,6 +2,9 @@ import time
 import random
 from functools import cmp_to_key
 
+def identity(self, x):
+	return x
+
 class GeneticAlgoLib:
 	def generate_random_binary_string_of_length_n(self, n):
 		binary_string = ""
@@ -42,8 +45,11 @@ class GeneticAlgoLib:
 
 		return instances[:number]
 
+	def get_two_random_instances(self, instances):
+		return instances[random.randint(0,len(instances)-1)], instances[random.randint(0,len(instances)-1)],
+
 	# test this function
-	def crossover(self, instance1, instance2, constraint_function, constraint, max_time_per_instance = float('inf')):
+	def crossover(self, instance1, instance2, constraint_function=identity, constraint=0, max_time_per_instance=float('inf')):
 		if len(instance1) != len(instance2):
 			print(instance1)
 			print(instance2)
@@ -61,7 +67,7 @@ class GeneticAlgoLib:
 			new_instance1 = instance1[crossover_point:] + instance2[:crossover_point]
 			new_instance2 = instance1[:crossover_point] + instance2[crossover_point:]
 
-			if (constraint_function(new_instance1) > constraint) and (constraint_function(new_instance2) > constraint):
+			if (constraint_function(new_instance1) <= constraint) and (constraint_function(new_instance2) <= constraint):
 				break
 
 			if (time.time() - t0) > max_time_per_instance: # refactor to field max_number_of_tests
@@ -71,7 +77,7 @@ class GeneticAlgoLib:
 
 		return new_instance1, new_instance2
 
-	def mutation_with_probability(self, instance, probability_of_mutation, constraint_function, constraint):
+	def mutation_with_probability(self, instance, probability_of_mutation, constraint_function=identity, constraint=0):
 		new_instance = ""
 
 		if random.random() < probability_of_mutation:

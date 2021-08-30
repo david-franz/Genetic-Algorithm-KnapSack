@@ -3,6 +3,11 @@ import math
 import time
 import random
 
+# TODO:
+# experiment with values
+# clean up code
+# combine with local search instead of just mutation
+
 from dataloader import DataLoader
 from genetic_algorithm_library import GeneticAlgoLib
 from graph_convergence import GraphConvergence
@@ -23,7 +28,7 @@ def calculate_weight_of_instance(instance):
 # threshold...
 # if no max_time_per_instance argument is given, the default argument is infinity (effectively turning off the system)
 # the weight function should return a number type
-def generate_initial_instance(capacity, max_time_per_instance = float('inf')):
+def generate_initial_instance(capacity, max_time_per_instance=float('inf')):
 	initial_instance = ga.generate_random_binary_string_of_length_n(bagsize)
 	
 	# we start at half instances with half capacity to give lots of chance for evolution
@@ -39,32 +44,27 @@ def generate_initial_instance(capacity, max_time_per_instance = float('inf')):
 	return initial_instance	
 
 # threshold is time allowed per instance generation before timeout (return original instance)
-def generate_next_generation(instances, capacity, max_time_per_instance = float('inf')):
+def generate_next_generation(instances, capacity, max_time_per_instance=float('inf')):
 	new_instances = list()
-
 	number_of_best_instance = int(len(instances) * 0.1) # use this to build out library method properly
-
 	new_instances.extend(ga.get_number_best_instances(instances, number_of_best_instance, fitness_function)) # change this to percentage when it works
 
-	for i in range(number_of_best_instance * 2): # we also add the same number of randomly generated instances
-		new_instances.append(generate_initial_instance(capacity, max_time_per_instance))
-
 	while len(new_instances) < bagsize:
-		instance1, instance2 = tuple(ga.get_number_best_instances(instances, 2, fitness_function)) # new function needed here
+		instance1, instance2 = ga.get_two_random_instances(instances) # new function needed here
 		new_instance1, new_instance2 = ga.crossover(instance1, instance2, calculate_weight_of_instance, capacity, max_time_per_instance)
 		
 		# experiment with the mutation probability
-		new_instance1 = ga.mutation_with_probability(new_instance1, 0.1, calculate_weight_of_instance, capacity)
-		new_instance2 = ga.mutation_with_probability(new_instance2, 0.1, calculate_weight_of_instance, capacity)
+		new_instance1 = ga.mutation_with_probability(new_instance1, 0.25, calculate_weight_of_instance, capacity)
+		new_instance2 = ga.mutation_with_probability(new_instance2, 0.25, calculate_weight_of_instance, capacity)
 
 		# shouldn't need these functions
-		if calculate_weight_of_instance(new_instance1) > capacity: # throw instance away if it is more weight than capacity
-			continue
+		#if calculate_weight_of_instance(new_instance1) > capacity: # throw instance away if it is more weight than capacity
+		#	continue
 		new_instances.append(new_instance1)
 		if len(new_instances) == bagsize: break
 		
-		if calculate_weight_of_instance(new_instance2) > capacity: # throw instance away if it is more weight than capacity
-			continue
+		#if calculate_weight_of_instance(new_instance2) > capacity: # throw instance away if it is more weight than capacity
+		#	continue
 		new_instances.append(new_instance2)
 
 	return new_instances
@@ -107,7 +107,7 @@ if __name__ == '__main__':
 	# make this some function of the bagsize
 	# more local optima requires larger population_size
 	# more resource can afford larger population
-	population_size = 50
+	population_size = 100
 
 	# the file is loaded and returned as a list of lists of size 2
 	# the first item in the list is the value (index 0)
@@ -134,7 +134,7 @@ if __name__ == '__main__':
 	# will refine this with a while loop and stopping criteria later
 	best_instances = list()
 	best_instances_fitnesses = list()
-	for gen_number in range(50): # number of generations
+	for gen_number in range(100): # number of generations
 		best_instance, best_instance_fitness = ga.find_best_instance(fitness_function, current_generation)
 		best_instances.append(best_instance)
 		best_instances_fitnesses.append(best_instance_fitness)
