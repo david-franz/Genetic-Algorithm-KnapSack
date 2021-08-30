@@ -5,32 +5,7 @@ import random
 
 from dataloader import DataLoader
 from genetic_algorithm_library import GeneticAlgoLib
-
-'''TODO:
-# implement dataloader
-
-# random generation of initial generation
-
-* NEEDS DEBUGGING*
-- way of selecting individuals for next generation:
-	– Construct an empty new population
-	– Do elitism (copy 5% of top individuals)
-	– Repeat until the new population is full:
-		• Select two parents from the population by roulette wheel selection
-			(the probability of selecting each individual is proportional with its fitness)
-		• Apply one-point crossover to the two parents to generate two children
-		• Each child has a probability (mutation rate) to undergo flip mutation
-		• Put the two (mutated) children into the new population
-
-- run for 5 generations and present results with matplotlib'
-	# implement good stopping criteria
-		• Stopping criteria: 100/200 generations <- start with 100
-			– Observe the convergence curves to increase or decrease 
-			– Larger instances (more items) need more generations
-	# download matplotlib
-	- draw convergence curves
-
-# abstract out code into libray for use in part 2'''
+from graph_convergence import GraphConvergence
 
 # this will caculate the weight of an instance
 def calculate_weight_of_instance(instance):
@@ -48,35 +23,48 @@ def calculate_weight_of_instance(instance):
 # threshold...
 # if no max_time_per_instance argument is given, the default argument is infinity (effectively turning off the system)
 # the weight function should return a number type
-def generate_initial_instance(max_time_per_instance = float('inf')):
-	initial_instance = gal.generate_random_binary_string_of_length_n(bagsize)
+def generate_initial_instance(capacity, max_time_per_instance = float('inf')):
+	initial_instance = ga.generate_random_binary_string_of_length_n(bagsize)
 	
+	# we start at half instances with half capacity to give lots of chance for evolution
 	t0 = time.time()
-	while calculate_weight_of_instance(initial_instance) > capacity:
-		initial_instance = gal.generate_random_binary_string_of_length_n(bagsize)
+	while calculate_weight_of_instance(initial_instance) > (capacity/2):
+		initial_instance = ga.generate_random_binary_string_of_length_n(bagsize)
 
 		# this ensures that we only take a certain amount of time per instance generated (threshold)
 		if (time.time() - t0) > max_time_per_instance:
-			initial_instance = gal.enerate_string_of_0s_length_n_with_1_at_index(bagsize, random.randint(0, bagsize))
+			while calculate_weight_of_instance(initial_instance) > (capacity/2):
+				initial_instance = ga.generate_string_of_0s_length_n_with_1_at_index(bagsize, random.randint(0, bagsize))
 
 	return initial_instance	
 
-def generate_next_generation(instances):
+# threshold is time allowed per instance generation before timeout (return original instance)
+def generate_next_generation(instances, capacity, max_time_per_instance = float('inf')):
 	new_instances = list()
 
-	new_instances.extend(gal.get_number_best_instances(instances, 5, fitness_function)) # change this to percentage when it works
+	number_of_best_instance = int(len(instances) * 0.1) # use this to build out library method properly
+
+	new_instances.extend(ga.get_number_best_instances(instances, number_of_best_instance, fitness_function)) # change this to percentage when it works
+
+	for i in range(number_of_best_instance * 2): # we also add the same number of randomly generated instances
+		new_instances.append(generate_initial_instance(capacity, max_time_per_instance))
 
 	while len(new_instances) < bagsize:
-		instance1, instance2 = tuple(gal.get_number_best_instances(instances, 2, fitness_function)) # new function needed here
-		new_instance1, new_instance2 = gal.crossover(instance1, instance2)
+		instance1, instance2 = tuple(ga.get_number_best_instances(instances, 2, fitness_function)) # new function needed here
+		new_instance1, new_instance2 = ga.crossover(instance1, instance2, calculate_weight_of_instance, capacity, max_time_per_instance)
 		
 		# experiment with the mutation probability
-		new_instance1 = gal.mutation_with_probability(new_instance1, 0.1)
-		new_instance2 = gal.mutation_with_probability(new_instance2, 0.1)
-		
+		new_instance1 = ga.mutation_with_probability(new_instance1, 0.1, calculate_weight_of_instance, capacity)
+		new_instance2 = ga.mutation_with_probability(new_instance2, 0.1, calculate_weight_of_instance, capacity)
+
+		# shouldn't need these functions
+		if calculate_weight_of_instance(new_instance1) > capacity: # throw instance away if it is more weight than capacity
+			continue
 		new_instances.append(new_instance1)
 		if len(new_instances) == bagsize: break
 		
+		if calculate_weight_of_instance(new_instance2) > capacity: # throw instance away if it is more weight than capacity
+			continue
 		new_instances.append(new_instance2)
 
 	return new_instances
@@ -86,7 +74,7 @@ def generate_next_generation(instances):
 # probably will change to value per unit weight
 # change to fitness function in notes
 # 𝛼: very large value means you always ignore infeasible solutions
-alpha = 1000 # large value to ignore infeasible solutions # change later?
+alpha = 10000 # large value to ignore infeasible solutions # change later?
 def fitness_function(instance):
 	fitness = 0
 
@@ -102,7 +90,8 @@ def fitness_function(instance):
 	return fitness
 
 if __name__ == '__main__':
-	if len(sys.argv) != 2:
+	# Ensure that we 
+	if len(sys.argv) < 2:
 		print("Please enter the data filename as a command line argument.")
 		sys.exit(1)
 
@@ -128,7 +117,7 @@ if __name__ == '__main__':
 	print("bag size = {}".format(bagsize))
 	print("capacity = {}".format(capacity))
 
-	gal = GeneticAlgoLib()
+	ga = GeneticAlgoLib()
 
 	# calculating the max allowed time to generate each instance in the intial generation
 	# if this threshold is passed, a simpler generation technique is used
@@ -136,17 +125,25 @@ if __name__ == '__main__':
 	threshold_time = max_allowed_runtime_for_initial_generation / population_size
 
 	# generating intial instances
-	current_generation = [generate_initial_instance(threshold_time) for i in range(population_size)]
+	current_generation = [generate_initial_instance(capacity, threshold_time) for i in range(population_size)]
 	print(current_generation)
 	#print([calculate_weight_of_instance(instance) for instance in current_generation])
 	#print([fitness_function(instance) for instance in current_generation])
 
 	# initially just going through 10 generations
 	# will refine this with a while loop and stopping criteria later
-	for i in range(100): # number of generations
-		best_instance, best_instance_fitness = gal.find_best_instance(fitness_function, current_generation)
+	best_instances = list()
+	best_instances_fitnesses = list()
+	for gen_number in range(50): # number of generations
+		best_instance, best_instance_fitness = ga.find_best_instance(fitness_function, current_generation)
+		best_instances.append(best_instance)
+		best_instances_fitnesses.append(best_instance_fitness)
 		#print("best instance = {}".format(best_instance))
 		print("--------------------------")
+		print("generation number = {}".format(gen_number+1))
 		print("best instance fitness = {}".format(best_instance_fitness))
 		print("best instance weight = {}".format(calculate_weight_of_instance(best_instance)))
-		current_generation = generate_next_generation(current_generation)
+		current_generation = generate_next_generation(current_generation, capacity, 0.1)
+
+	gc = GraphConvergence()
+	gc.draw(best_instances_fitnesses)

@@ -1,10 +1,3 @@
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-#																		#
-#	Genetic Algorithm Library											#
-#		written in 2021 by David Franz									#
-#																		#
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-
 import time
 import random
 from functools import cmp_to_key
@@ -32,6 +25,7 @@ class GeneticAlgoLib:
 		return binary_string
 
 	# NOT YET WORKING
+	# roulette wheel selection
 	def get_percentage_best_instances(self, instances, percentage):
 		instances = instances.sort() # need to custom sort
 
@@ -49,16 +43,35 @@ class GeneticAlgoLib:
 		return instances[:number]
 
 	# test this function
-	def crossover(self, instance1, instance2):
-		assert len(instance1) == len(instance2)
+	def crossover(self, instance1, instance2, constraint_function, constraint, max_time_per_instance = float('inf')):
+		if len(instance1) != len(instance2):
+			print(instance1)
+			print(instance2)
 
-		crossover_point = random.randint(0, len(instance1))
-		new_instance1 = instance1[crossover_point:] + instance2[:crossover_point]
-		new_instance2 = instance1[:crossover_point] + instance2[crossover_point:]
+		# refactor to method
+		new_instance1, new_instance2 = "", ""
+		for i in range(len(instance1)): # refactor variables
+			new_instance1 += "1"
+			new_instance2 += "1"
+
+		t0 = time.time()
+		while True:
+			crossover_point = random.randint(0, len(instance1))
+
+			new_instance1 = instance1[crossover_point:] + instance2[:crossover_point]
+			new_instance2 = instance1[:crossover_point] + instance2[crossover_point:]
+
+			if (constraint_function(new_instance1) > constraint) and (constraint_function(new_instance2) > constraint):
+				break
+
+			if (time.time() - t0) > max_time_per_instance: # refactor to field max_number_of_tests
+				new_instance1 = instance1
+				new_instance2 = instance2
+				break
 
 		return new_instance1, new_instance2
 
-	def mutation_with_probability(self, instance, probability_of_mutation):
+	def mutation_with_probability(self, instance, probability_of_mutation, constraint_function, constraint):
 		new_instance = ""
 
 		if random.random() < probability_of_mutation:
@@ -71,7 +84,10 @@ class GeneticAlgoLib:
 		else:
 			return instance
 
-		return new_instance
+		if constraint_function(new_instance) <= constraint:
+			return new_instance
+		else:
+			return instance
 
 	def find_best_instance(self, fitness_function, instances):
 		best_instance, best_instance_fitness = instances[0], fitness_function(instances[0])
@@ -80,4 +96,4 @@ class GeneticAlgoLib:
 			if fitness_function(instance) > best_instance_fitness:
 				best_instance, best_instance_fitness = instances[index], fitness_function(instances[index])
 
-		return best_instance, best_instance_fitness			
+		return best_instance, best_instance_fitness
