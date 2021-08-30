@@ -8,8 +8,25 @@ import time
 import random
 from functools import cmp_to_key
 
-def identity(x):
+def zero(x):
 	return 0
+
+# we will use this as our timeout block for all code blocks that need it
+def timeout(codeblock, threshold, default):
+	# assert type of codeblock is function
+	# assert type of threshold is number?
+	# assert type of default is list
+	# assert type of constraint_function is function
+
+	result_list = list()
+	loop_break = False
+
+	t0 = time.time()
+	while (not loop_break):
+		result_list, loop_break = codeblock(default)
+
+		if (time.time() - t0) > threshold:
+			return default
 
 def generate_random_binary_string_of_length_n(n):
 	binary_string = ""
@@ -54,30 +71,13 @@ def get_percentage_best_instances(instances, percentage, fitness_function):
 def get_two_random_instances(instances):
 	return instances[random.randint(0,len(instances)-1)], instances[random.randint(0,len(instances)-1)]
 
-# we will use this as our timeout block for all code blocks that need it
-def timeout(codeblock, threshold, default_value_list):
-	# assert type of codeblock is function
-	# assert type of threshold is number?
-	# assert type of default_value_list is list
-	# assert type of constraint_function is function
-
-	result_list = list()
-	loop_break = False
-
-	t0 = time.time()
-	while (not loop_break):
-		result_list, loop_break = codeblock(default_value_list)
-
-		if (time.time() - t0) > threshold:
-			return default_value_list
-
-def crossover(instance1, instance2, constraint_function=identity, constraint=0, max_time_per_instance=float('inf')):
+def crossover(instance1, instance2, constraint_function=zero, constraint=0, max_time_per_instance=float('inf')):
 	new_instance1 = generate_string_of_1s_of_length(len(instance1))
 	new_instance2 = generate_string_of_1s_of_length(len(instance1))
 
 	def codeblock(instances):
-		crossover_point = random.randint(0, len(instance1))
 		loop_break = False
+		crossover_point = random.randint(0, len(instance1))
 
 		new_instance1 = instances[0][crossover_point:] + instances[1][:crossover_point]
 		new_instance2 = instances[0][:crossover_point] + instances[1][crossover_point:]
@@ -96,7 +96,7 @@ def mutate_at_index(instance, index_of_mutation):
 	return instance[:index_of_mutation] + str((int(instance[index_of_mutation]) + 1) % 2) + instance[index_of_mutation+1:]
 
 # TODO: make this a timeout function
-def mutation_with_probability(instance, probability_of_mutation, constraint_function=identity, constraint=0):
+def mutation_with_probability(instance, probability_of_mutation, constraint_function=zero, constraint=0):
 	if random.random() < probability_of_mutation:
 		index_of_mutation = random.randint(0, len(instance)-1)
 
@@ -107,7 +107,7 @@ def mutation_with_probability(instance, probability_of_mutation, constraint_func
 	
 	return instance
 
-def mutation_local_search(instance, fitness_function, constraint_function=identity, constraint=0):
+def mutation_local_search(instance, fitness_function, constraint_function=zero, constraint=0):
 	def compare(item1, item2):
 		return fitness_function(item2) - fitness_function(item1)
 

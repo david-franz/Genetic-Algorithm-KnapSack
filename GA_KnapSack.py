@@ -41,8 +41,7 @@ def generate_initial_instance(capacity, max_time_per_instance=float('inf')):
 # threshold is time allowed per instance generation before timeout (return original instance)
 def generate_next_generation(instances, capacity, max_time_per_instance=float('inf')):
 	new_instances = list()
-	number_of_best_instance = int(len(instances) * 0.1) # use this to build out library method properly
-	new_instances.extend(gal.get_number_best_instances(instances, number_of_best_instance, fitness_function)) # change this to percentage when it works
+	new_instances.extend(gal.get_percentage_best_instances(instances, 0.1, fitness_function)) 
 
 	while len(new_instances) < population_size:
 		instance1, instance2 = gal.get_two_random_instances(instances) # new function needed here
@@ -64,7 +63,7 @@ def generate_next_generation(instances, capacity, max_time_per_instance=float('i
 # probably will change to value per unit weight
 # change to fitness function in notes
 # alpha: very large value means you always ignore infeasible solutions
-alpha = 10000 # large value to ignore infeasible solutions # change later?
+alpha = 10000 # large value to ignore infeasible solutions
 def fitness_function(instance):
 	fitness = 0
 
