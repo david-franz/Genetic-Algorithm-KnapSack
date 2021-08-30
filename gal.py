@@ -32,6 +32,12 @@ def generate_string_of_0s_length_n_with_1_at_index(n, index):
 
 	return binary_string
 
+def generate_string_of_1s_of_length(length):
+	new_instance = ""
+	for i in range(length):
+		new_instance += '1'
+	return new_instance
+
 def get_number_best_instances(instances, number, fitness_function):
 	def compare(item1, item2):
 		return fitness_function(item2) - fitness_function(item1)
@@ -48,9 +54,8 @@ def get_percentage_best_instances(instances, percentage, fitness_function):
 def get_two_random_instances(instances):
 	return instances[random.randint(0,len(instances)-1)], instances[random.randint(0,len(instances)-1)]
 
-
 # we will use this as our timeout block for all code blocks that need it
-def timeout(codeblock, threshold, default_value_list, constraint_function=identity):
+def timeout(codeblock, threshold, default_value_list):
 	# assert type of codeblock is function
 	# assert type of threshold is number?
 	# assert type of default_value_list is list
@@ -67,17 +72,10 @@ def timeout(codeblock, threshold, default_value_list, constraint_function=identi
 			return default_value_list
 
 def crossover(instance1, instance2, constraint_function=identity, constraint=0, max_time_per_instance=float('inf')):
-	if len(instance1) != len(instance2):
-		print(instance1)
-		print(instance2)
+	new_instance1 = generate_string_of_1s_of_length(len(instance1))
+	new_instance2 = generate_string_of_1s_of_length(len(instance1))
 
-	# refactor to method
-	new_instance1, new_instance2 = "", ""
-	for i in range(len(instance1)): # refactor variables
-		new_instance1 += '1'
-		new_instance2 += '1'
-
-	def codeblock(instances, constraint_function=identity):
+	def codeblock(instances):
 		crossover_point = random.randint(0, len(instance1))
 		loop_break = False
 
@@ -89,7 +87,7 @@ def crossover(instance1, instance2, constraint_function=identity, constraint=0, 
 
 		return [new_instance1, new_instance2], loop_break
 
-	result = timeout(codeblock, max_time_per_instance, [instance1, instance2], constraint_function)
+	result = timeout(codeblock, max_time_per_instance, [instance1, instance2])
 
 	return result[0], result[1]
 
@@ -97,6 +95,7 @@ def mutate_at_index(instance, index_of_mutation):
 	# adding 1 mod 2 flips the bit
 	return instance[:index_of_mutation] + str((int(instance[index_of_mutation]) + 1) % 2) + instance[index_of_mutation+1:]
 
+# TODO: make this a timeout function
 def mutation_with_probability(instance, probability_of_mutation, constraint_function=identity, constraint=0):
 	if random.random() < probability_of_mutation:
 		index_of_mutation = random.randint(0, len(instance)-1)
