@@ -13,10 +13,11 @@ class GraphConvergence:
 	def GraphConvergence():
 		self.best_fitnesses_for_each_gen_for_each_run = best_fitnesses_for_each_gen_for_each_run
 
-	def draw(self, best_fitnesses_for_each_gen_for_each_run):
+	def draw(self, title, best_fitnesses_for_each_gen_for_each_run):
 		runs = [run for run in range(len(best_fitnesses_for_each_gen_for_each_run))]
 
 		plt.plot(runs, best_fitnesses_for_each_gen_for_each_run)
 
+		plt.title(title)
 		plt.xlabel('gen #'), plt.ylabel('best fitness for gen') # naming the x and y axes
 		plt.show()
