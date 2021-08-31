@@ -46,7 +46,7 @@ def generate_next_generation(instances, capacity, max_time_per_instance=float('i
 	while len(new_instances) < population_size:
 		instance1, instance2 = gal.get_two_random_instances(instances) # new function needed here
 		new_instance1, new_instance2 = gal.crossover(instance1, instance2, weight_function, capacity, max_time_per_instance)
-		
+
 		new_instance1 = gal.mutation_with_probability(new_instance1, 0.1, weight_function, capacity)
 		if mutate_local_search:
 			new_instance2 = gal.mutation_local_search(new_instance2, fitness_function, weight_function, capacity)
@@ -94,21 +94,16 @@ if __name__ == '__main__':
 	print("bag size = {}".format(bagsize))
 	print("capacity = {}".format(capacity))
 
-	# PLACEHOLDER VALUE
-	# make this some function of the bagsize
-	# more local optima requires larger population_size
-	# more resource can afford larger population
-	population_size = 100
+	# THESE ARE OUR MAIN VALUES FOR TWEAKING THE ALGORITHM
+	population_size = 100 # More local optima requires larger population_size. More resource can afford larger population.
 	number_of_generations = 100
 	mutate_local_search = True
+	max_time_per_instance = (0.1 * (float(bagsize) / float(capacity))) / float(population_size) # threshold grows proportional to bagsize per unit capacity 
 
 	# the file is loaded and returned as a list of lists of size 2
 	# the first item of the internal lists is the value (index 0)
 	# the second item of the internal lists is the weight (index 1)
 	data = DataLoader.load_data(filename)
-
-	# if this threshold is passed, a simpler generation technique is used
-	max_time_per_instance = (10 * (bagsize / capacity)) / population_size # grows proportional to bagsize per unit capacity
 
 	# generating intial instances
 	current_generation = [generate_initial_instance(capacity, max_time_per_instance) for i in range(population_size)]
@@ -127,6 +122,6 @@ if __name__ == '__main__':
 	print("---------------------------------------------")
 	print("final solution = {}".format(best_instances[-1]))
 	print("---------------------------------------------")
-	
+
 	gc = GraphConvergence()
 	gc.draw(filename, best_instances_fitnesses)

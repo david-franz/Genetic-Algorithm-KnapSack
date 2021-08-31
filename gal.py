@@ -12,7 +12,7 @@ def zero(x):
 	return 0
 
 # we will use this as our timeout block for all code blocks that need it
-def timeout(codeblock, threshold, default):
+def timeout(codeblock, default, threshold=float('inf')):
 	# assert type of codeblock is function
 	# assert type of threshold is number?
 	# assert type of default is list
@@ -23,10 +23,12 @@ def timeout(codeblock, threshold, default):
 
 	t0 = time.time()
 	while (not loop_break):
-		result_list, loop_break = codeblock(default)
+		result, loop_break = codeblock(default)
 
 		if (time.time() - t0) > threshold:
 			return default
+
+	return result
 
 def generate_random_binary_string_of_length_n(n):
 	binary_string = ""
@@ -77,17 +79,17 @@ def crossover(instance1, instance2, constraint_function=zero, constraint=0, max_
 
 	def codeblock(instances):
 		loop_break = False
-		crossover_point = random.randint(0, len(instance1))
+		crossover_point = random.randint(1, len(instance1)-1)
 
-		new_instance1 = instances[0][crossover_point:] + instances[1][:crossover_point]
-		new_instance2 = instances[0][:crossover_point] + instances[1][crossover_point:]
+		new_instance1 = instance1[crossover_point:] + instance2[:crossover_point]
+		new_instance2 = instance1[:crossover_point] + instance2[crossover_point:]
 
 		if (constraint_function(new_instance1) <= constraint) and (constraint_function(new_instance2) <= constraint):
 			loop_break = True
 
 		return [new_instance1, new_instance2], loop_break
 
-	result = timeout(codeblock, max_time_per_instance, [instance1, instance2])
+	result = timeout(codeblock, [instance1, instance2], max_time_per_instance)
 
 	return result[0], result[1]
 
