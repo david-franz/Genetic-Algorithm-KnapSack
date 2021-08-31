@@ -8,9 +8,6 @@ import time
 import random
 from functools import cmp_to_key
 
-def zero(x):
-	return 0
-
 # we will use this as our timeout block for all code blocks that need it
 def timeout(codeblock, default, threshold=float('inf')):
 	# assert type of codeblock is function
@@ -55,7 +52,7 @@ def generate_string_of_1s_of_length(length):
 	new_instance = ""
 	for i in range(length):
 		new_instance += '1'
-	return new_instance
+	return new_instance	
 
 def get_number_best_instances(instances, number, fitness_function):
 	def compare(item1, item2):
@@ -73,9 +70,9 @@ def get_percentage_best_instances(instances, percentage, fitness_function):
 def get_two_random_instances(instances):
 	return instances[random.randint(0,len(instances)-1)], instances[random.randint(0,len(instances)-1)]
 
-def crossover(instance1, instance2, constraint_function=zero, constraint=0, max_time_per_instance=float('inf')):
+def crossover(instance1, instance2, lambda_condition=(lambda x: True), max_time_per_instance=float('inf')):
 	new_instance1 = generate_string_of_1s_of_length(len(instance1))
-	new_instance2 = generate_string_of_1s_of_length(len(instance1))
+	new_instance2 = generate_string_of_1s_of_length(len(instance2))
 
 	def codeblock(instances):
 		crossover_point = random.randint(1, len(instance1)-1)
@@ -83,7 +80,7 @@ def crossover(instance1, instance2, constraint_function=zero, constraint=0, max_
 		new_instance1 = instance1[crossover_point:] + instance2[:crossover_point]
 		new_instance2 = instance1[:crossover_point] + instance2[crossover_point:]
 
-		loop_break = ((constraint_function(new_instance1) <= constraint) and (constraint_function(new_instance2) <= constraint))
+		loop_break = (lambda_condition(new_instance1) and lambda_condition(new_instance2))
 
 		return [new_instance1, new_instance2], loop_break
 
@@ -96,37 +93,68 @@ def mutate_at_index(instance, index_of_mutation):
 	return instance[:index_of_mutation] + str((int(instance[index_of_mutation]) + 1) % 2) + instance[index_of_mutation+1:]
 
 # TODO: make this a timeout function
-def mutation_with_probability(instance, probability_of_mutation, constraint_function=zero, constraint=0):
+def mutation_with_probability(instance, probability_of_mutation, lambda_condition=(lambda x: True)):
 	if random.random() < probability_of_mutation:
 		index_of_mutation = random.randint(0, len(instance)-1)
 
 		new_instance = mutate_at_index(instance, index_of_mutation)
 		
-		if constraint_function(new_instance) <= constraint:
+		if lambda_condition(new_instance):
 			return new_instance
 	
 	return instance
 
-def mutation_local_search(instance, fitness_function, constraint_function=zero, constraint=0):
+def mutation_local_search(instance, fitness_function, lambda_condition=(lambda x: True)):
 	def compare(item1, item2):
 		return fitness_function(item2) - fitness_function(item1)
 
 	new_instances = list()
+	new_instances.append(instance)
 	for index in range(len(instance)):
 		new_instances.append(mutate_at_index(instance, index))
 	new_instances.sort(key=cmp_to_key(compare))
 
 	for new_instance in new_instances:
-		if constraint_function(new_instance) <= constraint:
+		if lambda_condition(new_instance):
 			return new_instance
 	
 	return instance
 
-def find_best_instance(fitness_function, instances):
-	best_instance, best_instance_fitness = instances[0], fitness_function(instances[0])
+# this will return an initial instance below the weight capcity of the bag
+# threshold...
+# if no max_time_per_instance argument is given, the default argument is infinity (effectively turning off the system)
+# the weight function should return a number type
+def generate_initial_instance(binary_string_length, lambda_condition=(lambda x: True), max_time_per_instance=float('inf')):
+	initial_instance = generate_random_binary_string_of_length_n(binary_string_length)
+	
+	# we start at half instances with half capacity to give lots of chance for evolution
+	t0 = time.time()
+	while lambda_condition(initial_instance):
+		initial_instance = generate_random_binary_string_of_length_n(binary_string_length)
 
-	for index, instance in enumerate(instances):
-		if fitness_function(instance) > best_instance_fitness:
-			best_instance, best_instance_fitness = instances[index], fitness_function(instances[index])
+		# this ensures that we only take a certain amount of time per instance generated (threshold)
+		if (time.time() - t0) > max_time_per_instance:
+			while lambda_condition(initial_instance):
+				initial_instance = generate_string_of_0s_length_n_with_1_at_index(binary_string_length, random.randint(0, binary_string_length))
 
-	return best_instance, best_instance_fitness
+	return initial_instance		
+
+# threshold is time allowed per instance generation before timeout (return original instance)
+def generate_next_generation(instances, population_size, capacity, fitness_function, lambda_condition=(lambda x: True), mutate_local_search=False, max_time_per_instance=float('inf')):
+	new_instances = list()
+	new_instances.extend(get_percentage_best_instances(instances, 0.1, fitness_function))
+
+	while len(new_instances) < population_size:
+		instance1, instance2 = get_two_random_instances(instances)
+		new_instance1, new_instance2 = crossover(instance1, instance2, lambda_condition, max_time_per_instance)
+
+		new_instance1 = mutation_with_probability(new_instance1, 0.1, lambda_condition)
+		new_instance2 = mutation_with_probability(new_instance2, 0.1, lambda_condition)
+
+		new_instances.append(new_instance1)
+		new_instances.append(new_instance2)
+
+	if mutate_local_search:
+		new_instances = [mutation_local_search(instance, fitness_function, lambda_condition) for instance in new_instances]	
+
+	return new_instances
