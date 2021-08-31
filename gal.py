@@ -78,14 +78,12 @@ def crossover(instance1, instance2, constraint_function=zero, constraint=0, max_
 	new_instance2 = generate_string_of_1s_of_length(len(instance1))
 
 	def codeblock(instances):
-		loop_break = False
 		crossover_point = random.randint(1, len(instance1)-1)
 
 		new_instance1 = instance1[crossover_point:] + instance2[:crossover_point]
 		new_instance2 = instance1[:crossover_point] + instance2[crossover_point:]
 
-		if (constraint_function(new_instance1) <= constraint) and (constraint_function(new_instance2) <= constraint):
-			loop_break = True
+		loop_break = ((constraint_function(new_instance1) <= constraint) and (constraint_function(new_instance2) <= constraint))
 
 		return [new_instance1, new_instance2], loop_break
 

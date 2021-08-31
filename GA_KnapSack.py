@@ -41,14 +41,14 @@ def generate_initial_instance(capacity, max_time_per_instance=float('inf')):
 # threshold is time allowed per instance generation before timeout (return original instance)
 def generate_next_generation(instances, capacity, max_time_per_instance=float('inf')):
 	new_instances = list()
-	new_instances.extend(gal.get_percentage_best_instances(instances, 0.1, fitness_function)) 
+	new_instances.extend(gal.get_percentage_best_instances(instances, 0.1, fitness_function))
 
 	while len(new_instances) < population_size:
 		instance1, instance2 = gal.get_two_random_instances(instances) # new function needed here
 		new_instance1, new_instance2 = gal.crossover(instance1, instance2, weight_function, capacity, max_time_per_instance)
 
 		new_instance1 = gal.mutation_with_probability(new_instance1, 0.1, weight_function, capacity)
-		if mutate_local_search:
+		if mutate_local_search: # only do every 5 generations or only for the top instances? # implement above
 			new_instance2 = gal.mutation_local_search(new_instance2, fitness_function, weight_function, capacity)
 		else:
 			new_instance2 = gal.mutation_with_probability(new_instance2, 0.1, weight_function, capacity)
@@ -72,7 +72,7 @@ def fitness_function(instance):
 	for index, character in enumerate(instance):
 		activation_function = int(character)
 		fitness += activation_function * int(data[index][0])
-	# use associativity later to make this one for loop (possibly)
+
 	for index, character in enumerate(instance):
 		fitness -= alpha * max(0, (activation_function * int(data[index][1]) - capacity))
 
@@ -114,10 +114,10 @@ if __name__ == '__main__':
 		best_instances.append(best_instance)
 		best_instances_fitnesses.append(best_instance_fitness)
 
-		print("---------------------------------------------")
-		print("generation number: {}".format(gen_number + 1))
-		print("best instance fitness: {}".format(best_instance_fitness))
-		print("best instance weight:{}".format(weight_function(best_instance)))
+		#print("---------------------------------------------")
+		#print("generation number: {}".format(gen_number + 1))
+		#print("best instance fitness: {}".format(best_instance_fitness))
+		#print("best instance weight:{}".format(weight_function(best_instance)))
 		current_generation = generate_next_generation(current_generation, capacity, max_time_per_instance)
 	print("---------------------------------------------")
 	print("final solution = {}".format(best_instances[-1]))
