@@ -56,6 +56,7 @@ if __name__ == '__main__':
 	population_size = 100 # More local optima requires larger population_size. More resource can afford larger population.
 	number_of_generations = 100
 	mutate_local_search = True
+	mutate_local_search_skip_gens_number = 10
 	max_time_per_instance = (1.0 * (float(bagsize) / float(capacity))) / float(population_size) # threshold grows proportional to bagsize per unit capacity 
 
 	# the file is loaded and returned as a list of lists of size 2
@@ -64,30 +65,33 @@ if __name__ == '__main__':
 	data = DataLoader.load_data(filename)
 
 	# generating intial instances
-	current_generation = [gal.generate_initial_instance(bagsize, 
-														(lambda instance : weight_function(instance) > capacity), 
-														max_time_per_instance)
-																				for i in range(population_size)]
+	current_generation = [gal.generate_initial_instance(bagsize, (lambda instance : weight_function(instance) > capacity), max_time_per_instance) for i in range(population_size)]
 
 	best_instances, best_instances_fitnesses = list(), list()
 	for gen_number in range(number_of_generations):
-		best_instance = gal.get_number_best_instances(current_generation, 1, fitness_function)[0]
-		best_instance_fitness = fitness_function(best_instance)
-		best_instances.append(best_instance)
-		best_instances_fitnesses.append(best_instance_fitness)
-
 		print("---------------------------------------------")
-		print("generation number: {}".format(gen_number + 1))
-		print("best instance fitness: {}".format(best_instance_fitness))
-		print("best instance weight:{}".format(weight_function(best_instance)))
+		print("generation number: {}".format(gen_number+1))
 
+		# this ensures that we only do local search every mutate_local_search_skip_gens_number generations
+		mutate_local_search_for_this_generation = bool(int(mutate_local_search) * (1 if ((gen_number+1)%mutate_local_search_skip_gens_number==0) else 0))
+		if mutate_local_search_for_this_generation:
+			print("[doing local search this generation]")
+			
 		current_generation = gal.generate_next_generation(current_generation,
 															population_size, 
 															capacity, 
 															fitness_function, 
 															(lambda instance : weight_function(instance) <= capacity), 
-															bool(int(mutate_local_search) * (1 if (gen_number%10==0) else 0)), # this ensures that we only do local search every 10 generations
+															mutate_local_search_for_this_generation,
 															max_time_per_instance)
+
+		best_instance = gal.get_number_best_instances(current_generation, 1, fitness_function)[0]
+		best_instance_fitness = fitness_function(best_instance)
+		best_instances.append(best_instance)
+		best_instances_fitnesses.append(best_instance_fitness)
+
+		print("best instance fitness: {}".format(best_instance_fitness))
+		print("best instance weight:{}".format(weight_function(best_instance)))
 	print("---------------------------------------------")
 	print("final solution = {}".format(best_instances[-1]))
 	print("---------------------------------------------")
