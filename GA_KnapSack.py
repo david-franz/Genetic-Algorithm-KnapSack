@@ -16,7 +16,6 @@ def weight_function(instance):
 
 	return weight
 
-# want to abstract this to take a lambda
 # the fitness function is the sum of the values of the items
 # probably will change to value per unit weight
 # change to fitness function in notes
@@ -53,7 +52,7 @@ if __name__ == '__main__':
 	print("capacity = {}".format(capacity))
 
 	# THESE ARE OUR MAIN VALUES FOR TWEAKING THE ALGORITHM
-	population_size = 100 # More local optima requires larger population_size. More resource can afford larger population.
+	population_size = 50 # More local optima requires larger population_size. More resource can afford larger population.
 	number_of_generations = 100
 	mutate_local_search = True
 	mutate_local_search_skip_gens_number = 10
@@ -62,10 +61,10 @@ if __name__ == '__main__':
 	# the file is loaded and returned as a list of lists of size 2
 	# the first item of the internal lists is the value (index 0)
 	# the second item of the internal lists is the weight (index 1)
-	data = DataLoader.load_data(filename)
+	data = DataLoader.load_part1_data(filename)
 
 	# generating intial instances
-	current_generation = [gal.generate_initial_instance(bagsize, (lambda instance : weight_function(instance) > capacity), max_time_per_instance) for i in range(population_size)]
+	current_generation = [gal.generate_initial_instance(bagsize, (lambda instance : weight_function(instance) <= capacity), max_time_per_instance) for i in range(population_size)]
 
 	best_instances, best_instances_fitnesses = list(), list()
 	for gen_number in range(number_of_generations):
@@ -78,12 +77,13 @@ if __name__ == '__main__':
 			print("[doing local search this generation]")
 			
 		current_generation = gal.generate_next_generation(current_generation,
-															population_size, 
-															capacity, 
+															population_size,
 															fitness_function, 
-															(lambda instance : weight_function(instance) <= capacity), 
-															mutate_local_search_for_this_generation,
-															max_time_per_instance)
+															constraint=(lambda instance : weight_function(instance) <= capacity),
+															probability_of_mutation=0.1,
+															mutate_local_search_best=False, 
+															mutate_local_search_all=mutate_local_search_for_this_generation,
+															max_time_per_instance=max_time_per_instance)
 
 		best_instance = gal.get_number_best_instances(current_generation, 1, fitness_function)[0]
 		best_instance_fitness = fitness_function(best_instance)

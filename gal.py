@@ -54,8 +54,14 @@ def generate_string_of_1s_of_length(length):
 		new_instance += '1'
 	return new_instance	
 
+# WILL NEED TO THINK ABOUT THINK FUNCTION:
+# HOW CAN I ABSTRACT FITNESS_FUNCTION ARGUMENTS?
 def get_number_best_instances(instances, number, fitness_function):
 	def compare(item1, item2):
+		#print(f"fitness_function = {fitness_function}")
+		#print(f"item1 = {item1}")
+		#print(f"item2 = {item2}")
+
 		return fitness_function(item2) - fitness_function(item1)
 	instances.sort(key=cmp_to_key(compare))
 
@@ -132,32 +138,46 @@ def generate_initial_instance(binary_string_length, constraint=(lambda x: True),
 	
 	# we start at half instances with half capacity to give lots of chance for evolution
 	t0 = time.time()
-	while constraint(initial_instance):
+	while (not constraint(initial_instance)): # search until solution found that satisfies constraint or timeout
 		initial_instance = generate_random_binary_string_of_length_n(binary_string_length)
 
 		# this ensures that we only take a certain amount of time per instance generated (threshold)
 		if (time.time() - t0) > max_time_per_instance:
-			while constraint(initial_instance):
+			while (not constraint(initial_instance)):
 				initial_instance = generate_string_of_0s_length_n_with_1_at_index(binary_string_length, random.randint(0, binary_string_length))
 
 	return initial_instance		
 
 # threshold is time allowed per instance generation before timeout (return original instance)
-def generate_next_generation(instances, population_size, capacity, fitness_function, constraint=(lambda x: True), mutate_local_search=False, max_time_per_instance=float('inf')):
+def generate_next_generation(instances, population_size, fitness_function, constraint=(lambda x: True), probability_of_mutation=0.0, mutate_local_search_best=False, mutate_local_search_all=False, max_time_per_instance=float('inf')):
 	new_instances = list()
-	new_instances.extend(get_percentage_best_instances(instances, 0.1, fitness_function))
+	new_instances.extend(get_percentage_best_instances(instances, 0.1, fitness_function)) # CHANGE 0.1 to variable
+
+	# make this an internal function- two types of local search: best % or all
+	if mutate_local_search_best:
+		#new_instances = [mutation_local_search(instance, fitness_function, constraint) for instance in new_instances]
+		new_instances_mutated = list()
+		for instance in new_instances:
+			result = mutation_local_search(instance, fitness_function, constraint)
+			new_instances_mutated.append(result)
+	
+		new_instances = new_instances_mutated
 
 	while len(new_instances) < population_size:
 		instance1, instance2 = get_two_random_instances(instances)
 		new_instance1, new_instance2 = crossover(instance1, instance2, constraint, max_time_per_instance)
 
-		new_instance1 = mutation_with_probability(new_instance1, 0.1, constraint)
-		new_instance2 = mutation_with_probability(new_instance2, 0.1, constraint)
+		new_instance1 = mutation_with_probability(new_instance1, probability_of_mutation, constraint)
+		new_instance2 = mutation_with_probability(new_instance2, probability_of_mutation, constraint)
 
 		new_instances.append(new_instance1)
 		new_instances.append(new_instance2)
 
-	if mutate_local_search:
-		new_instances = [mutation_local_search(instance, fitness_function, constraint) for instance in new_instances]	
+	if mutate_local_search_all:
+		#new_instances = [mutation_local_search(instance, fitness_function, constraint) for instance in new_instances]
+		new_instances_mutated = list()
+		for instance in new_instances:
+			result = mutation_local_search(instance, fitness_function, constraint)
+			new_instances_mutated.append(result)
 
 	return new_instances
