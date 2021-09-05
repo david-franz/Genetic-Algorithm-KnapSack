@@ -57,7 +57,7 @@ def filter_based_fitness_function(binary_string): # information gain
 	# possibly we can use Baye's therorem:
 	# we have p(y|x_1, ..., x_n) = (p(x_1, ..., x_n | y) * p(y)) / p(x_1, ..., x_n) 
 	#							 = (p(x_1 | y) * ... * p(x_n | y) * p(y)) / (p(x_1) * ... * p(x_n)) (by independence of each featyre selection)
-	#							 = (p(x_1 | y) * ... * p(x_n | y) * p(y)) / p_x_1tox_n
+	#							 = (p(x_1 | y) * ... * p(x_n | y) * p(y)) / (p(x_1) * ... * p(x_n))
 
 	return entropy - conditional_entropy
 
@@ -150,17 +150,16 @@ if __name__ == '__main__':
 	# THESE ARE OUR MAIN VALUES FOR TWEAKING THE ALGORITHM
 	population_size = 25 # More local optima requires larger population_size. More resource can afford larger population.
 	number_of_generations = 25
-	mutate_local_search = True # PLACEHOLDER VALUE # try later
+	mutate_local_search = True
 	mutate_local_search_skip_gens_number = 5
-	max_time_per_instance = 0.00000001 # PLACEHOLDER VALUE
-	max_percentage_of_original_features_allowed = 0.3 # BETTER NAME THAN AIMED?
+	max_time_per_instance = 0.00000001
+	max_percentage_of_original_features_allowed = 0.3
 	max_number_of_original_features_allowed = int(max_percentage_of_original_features_allowed * total_number_of_features)
 
 	df = DataLoader.load_part2_data(datasource + ".data") # loads as a pandas dataframe
 	print(df)
 	
-	#seed = random.randint(0,100)
-	seed = 34
+	seed = random.randint(0,100)
 	print(f"seed = {seed}")
 
 	training_data, testing_data = train_test_split(df.T, test_size=0.2, random_state=seed)
@@ -176,7 +175,7 @@ if __name__ == '__main__':
 	# generating intial instances
 	current_generation = [gal.generate_initial_instance(total_number_of_features, lambda_condition, 0) for i in range(population_size)]
 
-	fitness_function = filter_based_fitness_function
+	fitness_function = wrapper_based_fitness_function #filter_based_fitness_function
 
 	best_instances, best_instances_fitnesses = list(), list()
 	for gen_number in range(number_of_generations):
@@ -197,14 +196,15 @@ if __name__ == '__main__':
 		best_instance_fitness = fitness_function(best_instance)
 		best_instances.append(best_instance)
 		best_instances_fitnesses.append(best_instance_fitness)
-
-		print(best_instance)
 		print("best instance fitness: {}".format(best_instance_fitness))
 	print("---------------------------------------------")
-	print("final solution = {}".format(best_instances[-1]))
+	final_solution = best_instances[-1]
+	print("final solution = {}".format(final_solution))
 	print("---------------------------------------------")
 	
 	print(f"program time = {time.time() - program_t0}")
+	if fitness_function == filter_based_fitness_function:
+		print(f"final classification accuracy = {wrapper_based_fitness_function(final_solution)}")
 
 	gc = GraphConvergence()
 	gc.draw(datasource, best_instances_fitnesses)
