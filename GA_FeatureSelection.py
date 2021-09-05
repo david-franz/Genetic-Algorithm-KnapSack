@@ -1,6 +1,6 @@
 import sys
-import time
 import math
+import time
 import random
 
 import pandas as pd
@@ -11,18 +11,55 @@ import gal # genetic algorithm library
 from dataloader import DataLoader
 from graph_convergence import GraphConvergence
 
-# low entropy is better
+def probability_of_class(classname):
+	count_of_class = 0
+
+	index_of_class = df.shape[0]-1
+	for key in df.keys():
+		if df[key][index_of_class] == classname:
+			count_of_class += 1
+
+	return count_of_class / len(df.keys())
+
+def calculate_entropy(probability):
+	return -probability * math.log2(probability)	
+
+def probability_of_feature_given_class(x, mean_class1, mean_class2):
+	count_of_class = 0
+
+	index_of_class = df.shape[0]-1
+	for key in df.keys():
+		if df[key][index_of_class] == classname:
+			count_of_class += 1
+
+# low entropy is better (expected value of surprise- we don't want surprise; we want to be able to make predictions)
 # mutual information is:
 # the difference in entropy between the class label not knowing any features, and the class label given the features
 # meaning of this is:
 # how much information this feature subset has to distinguish the class labels (larger is better)
 # expect this to probably be worse than the wrapper based fitness function
+#
+# Because all features are chosen independently from each other, p(x_1, ..., x_n) = p(x_1) * ... * p(x_n) = (1/total_number_of_features)^n
+# and p(y | x_1, ..., x_n) = p(y) because the specific features of each data point is independent from the amount of classlabels of a given kind # possibly this is wrong but at least if we get to this point, it might be the only thing that's wrong
+# need to work out if a what values correspond to higher probability of each class
 def filter_based_fitness_function(binary_string): # information gain
-	pass
+	p_class1 = probability_of_class(1.0)
+	p_class2 = probability_of_class(2.0)
+	entropy = calculate_entropy(p_class1) + calculate_entropy(p_class2)
 
-	# step 1: calculate the entropy of the class
+	count_of_features_in_binary_string = sum([int(b) for b in binary_string])
+	p_x_1tox_n = math.pow((1/total_number_of_features), count_of_features_in_binary_string)
+	conditional_entropy = p_x_1tox_n * (calculate_entropy(p_class1) + calculate_entropy(p_class2)) # step I ran into trouble in
 
-	# first we calculate the probability of winning
+	# x_1, ..., x_n corresponds to the feature numbers
+	# p(x_1 | y) means "what's the probability of choosing feature number x_1 given class y (1.0 or 2.0)?"
+	#
+	# possibly we can use Baye's therorem:
+	# we have p(y|x_1, ..., x_n) = (p(x_1, ..., x_n | y) * p(y)) / p(x_1, ..., x_n) 
+	#							 = (p(x_1 | y) * ... * p(x_n | y) * p(y)) / (p(x_1) * ... * p(x_n)) (by independence of each featyre selection)
+	#							 = (p(x_1 | y) * ... * p(x_n | y) * p(y)) / p_x_1tox_n
+
+	return entropy - conditional_entropy
 
 def convert_df_to_list(data):
 	data_as_list = list()
@@ -35,8 +72,8 @@ def convert_df_to_list(data):
 	return data_as_list
 
 # will need to provide training data
-def wrapper_based_fitness_function(binary_string): # KNN try DBScan later maybe
-	if binary_string == ('0' * len(binary_string)): # change later
+def wrapper_based_fitness_function(binary_string):
+	if binary_string == ('0' * len(binary_string)):
 		return 0
 
 	# process this as a list here to ensure we remove the class label
@@ -93,6 +130,8 @@ def filter_rows_with_binary_string(data, binary_string, get_class_labels=False):
 
 
 if __name__ == '__main__':
+	program_t0 = time.time()
+
 	if len(sys.argv) < 2:
 		print("Please enter the data source (sonar or wbcd) as a command line argument.")
 		sys.exit(1)
@@ -114,7 +153,7 @@ if __name__ == '__main__':
 	mutate_local_search = True # PLACEHOLDER VALUE # try later
 	mutate_local_search_skip_gens_number = 5
 	max_time_per_instance = 0.00000001 # PLACEHOLDER VALUE
-	max_percentage_of_original_features_allowed = 0.35 # BETTER NAME THAN AIMED?
+	max_percentage_of_original_features_allowed = 0.3 # BETTER NAME THAN AIMED?
 	max_number_of_original_features_allowed = int(max_percentage_of_original_features_allowed * total_number_of_features)
 
 	df = DataLoader.load_part2_data(datasource + ".data") # loads as a pandas dataframe
@@ -129,16 +168,15 @@ if __name__ == '__main__':
 
 	#print(f"No. of training examples: {training_data.shape[0]}")
 	#print(f"No. of testing examples: {testing_data.shape[]}")
-
-	# the condition here is that we can't take more features than the 
+	
 	# the lambda condition is something that you want to satisfy
-	# may need to change code in gal.py so that it means "while condition is not satisfied: run this while loop"
+	# the condition here is that we can't take more features than max_number_of_original_features_allowed
 	lambda_condition = (lambda instance: (sum([int(b) for b in instance]) <= max_number_of_original_features_allowed))
 
 	# generating intial instances
 	current_generation = [gal.generate_initial_instance(total_number_of_features, lambda_condition, 0) for i in range(population_size)]
 
-	fitness_function = wrapper_based_fitness_function
+	fitness_function = filter_based_fitness_function
 
 	best_instances, best_instances_fitnesses = list(), list()
 	for gen_number in range(number_of_generations):
@@ -153,18 +191,10 @@ if __name__ == '__main__':
 		# this ensures that we only do local search every mutate_local_search_skip_gens_number generations
 		mutate_local_search_for_this_generation = bool(int(mutate_local_search) * (1 if ((gen_number+1)%mutate_local_search_skip_gens_number==0) else 0))
 		
-		current_generation = gal.generate_next_generation(current_generation,
-															population_size, 
-															fitness_function, # CHANGE THIS
-															constraint=lambda_condition,
-															probability_of_mutation=0.5,
-															mutate_local_search_best=mutate_local_search_for_this_generation,
-															mutate_local_search_all=False,
-															max_time_per_instance=max_time_per_instance)
+		current_generation = gal.generate_next_generation(current_generation, population_size, fitness_function, constraint=lambda_condition, probability_of_mutation=0.5, mutate_local_search_best=mutate_local_search_for_this_generation, mutate_local_search_all=False, max_time_per_instance=max_time_per_instance)
 
-		# BE SURE TO CHANGE THE PASSED IN FITNESS FUNCTION HERE
 		best_instance = gal.get_number_best_instances(current_generation, 1, fitness_function)[0]
-		best_instance_fitness = fitness_function(best_instance) # CHANGE THIS
+		best_instance_fitness = fitness_function(best_instance)
 		best_instances.append(best_instance)
 		best_instances_fitnesses.append(best_instance_fitness)
 
@@ -173,6 +203,8 @@ if __name__ == '__main__':
 	print("---------------------------------------------")
 	print("final solution = {}".format(best_instances[-1]))
 	print("---------------------------------------------")
+	
+	print(f"program time = {time.time() - program_t0}")
 
 	gc = GraphConvergence()
 	gc.draw(datasource, best_instances_fitnesses)

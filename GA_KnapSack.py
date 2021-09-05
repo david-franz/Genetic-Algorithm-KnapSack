@@ -52,7 +52,7 @@ if __name__ == '__main__':
 	print("capacity = {}".format(capacity))
 
 	# THESE ARE OUR MAIN VALUES FOR TWEAKING THE ALGORITHM
-	population_size = 50 # More local optima requires larger population_size. More resource can afford larger population.
+	population_size = 100 # More local optima requires larger population_size. More resource can afford larger population.
 	number_of_generations = 100
 	mutate_local_search = True
 	mutate_local_search_skip_gens_number = 10
@@ -76,14 +76,7 @@ if __name__ == '__main__':
 		if mutate_local_search_for_this_generation:
 			print("[doing local search this generation]")
 			
-		current_generation = gal.generate_next_generation(current_generation,
-															population_size,
-															fitness_function, 
-															constraint=(lambda instance : weight_function(instance) <= capacity),
-															probability_of_mutation=0.1,
-															mutate_local_search_best=False, 
-															mutate_local_search_all=mutate_local_search_for_this_generation,
-															max_time_per_instance=max_time_per_instance)
+		current_generation = gal.generate_next_generation(current_generation, population_size, fitness_function, constraint=(lambda instance : weight_function(instance) <= capacity), probability_of_mutation=0.1, mutate_local_search_best=False, mutate_local_search_all=mutate_local_search_for_this_generation, max_time_per_instance=max_time_per_instance)
 
 		best_instance = gal.get_number_best_instances(current_generation, 1, fitness_function)[0]
 		best_instance_fitness = fitness_function(best_instance)
@@ -91,7 +84,7 @@ if __name__ == '__main__':
 		best_instances_fitnesses.append(best_instance_fitness)
 
 		print("best instance fitness: {}".format(best_instance_fitness))
-		print("best instance weight:{}".format(weight_function(best_instance)))
+		print("best instance weight: {}".format(weight_function(best_instance)))
 	print("---------------------------------------------")
 	print("final solution = {}".format(best_instances[-1]))
 	print("---------------------------------------------")

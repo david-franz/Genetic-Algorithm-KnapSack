@@ -54,14 +54,8 @@ def generate_string_of_1s_of_length(length):
 		new_instance += '1'
 	return new_instance	
 
-# WILL NEED TO THINK ABOUT THINK FUNCTION:
-# HOW CAN I ABSTRACT FITNESS_FUNCTION ARGUMENTS?
 def get_number_best_instances(instances, number, fitness_function):
 	def compare(item1, item2):
-		#print(f"fitness_function = {fitness_function}")
-		#print(f"item1 = {item1}")
-		#print(f"item2 = {item2}")
-
 		return fitness_function(item2) - fitness_function(item1)
 	instances.sort(key=cmp_to_key(compare))
 

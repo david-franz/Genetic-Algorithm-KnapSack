@@ -17,14 +17,13 @@ class DataLoader:
 			return len([line.split() for line in f.readlines()])
 
 	@staticmethod
-	def load_part2_data(filename): 
+	def load_part2_data(filename):
+		'''
+			COMPLETELY REFACTOR THIS METHOD
+		'''
 		
 		# this will automatically close the file when we exit the block
 		with open("sonar-wbcd/" + str(filename), "r") as f:
-			'''
-				COMPLETELY REFACTOR THIS METHOD
-			'''
-
 			lines = [line.split() for line in f.readlines()]
 			str_list = [list(line[0].split(',')) for line in lines]
 			
@@ -39,4 +38,4 @@ class DataLoader:
 			for index, line in enumerate(data_list):
 				data_dict[index] = line
 
-			return pd.DataFrame(data_dict) # try to bring in data as numbers rather than strings
+			return pd.DataFrame(data_dict)
